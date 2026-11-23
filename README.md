@@ -9,9 +9,9 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.3` (extension-style glide engine + tap/bridge diagnostics)
+- Version: debug prototype `1.4` (extension-style glide engine + tap/bridge diagnostics + resilient settings links)
 - Minimum Android: 7.0 (API 24)
-- SHA-256: `2B9AFC0391647D4CA6BE3C808E74678ED8DC3D61A956EADAB7CE24F1E1C8D665`
+- SHA-256: `269D814A2AAFFE011776188D79EA5CA02E832589AA99AC598DF353B276FF300C`
 
 ## Install
 
@@ -24,7 +24,7 @@ This is a debug APK for testing, not a Play Store release.
 
 ### If a main-app button looks dead
 
-Build `1.3` shows a small diagnostic line under the status message. It should include `v1.3`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. If the counter does not move, the phone is still running an older APK — uninstall and reinstall. If the counter moves but `bridge missing`, close and reopen the app after granting both permissions.
+Build `1.4` shows a small diagnostic line under the status message. It should include `v1.4`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…`; if Android does not switch screens, it shows the manual Settings path instead. If the counter does not move, the phone is still running an older APK — uninstall and reinstall. If the counter moves but `bridge missing`, close and reopen the app after granting both permissions.
 
 ## Set up once
 
