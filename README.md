@@ -9,22 +9,31 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.5` (extension-style glide engine + bridge-independent permission setup)
+- Version: debug prototype `1.6` (extension-paced continuous glide + per-bubble OCR stops)
 - Minimum Android: 7.0 (API 24)
-- SHA-256: `ABCB86C922D27DD276264CB5EA8B29EFFB8A0BC70B48AC0D102753936114F01B`
+- Size: 24,780,562 bytes
+- SHA-256: `03B6A75FA5EAA65043BD979F916A7C5481DB4CA3E239D2A7621B7AAD3E6E187D`
+
+## What changed in 1.6
+
+- **No more long wait when tapping Open.** The Drawing access and Accessibility buttons now go straight to Android settings; they no longer wait for a web bridge call that could stall for ~20 seconds.
+- **Much faster, smoother scroll.** The five speeds are now roughly 620/900/1300/1750/2300 px/s. Motion is one velocity-ramped glide with continued drag segments instead of short separate flicks, and gaps are crossed at nearly 1.9x while artwork is revealed more slowly.
+- **Bubble stops fixed.** Bubble reading is on by default. Local OCR now produces a separate stop for each recognised line, so the reader pauses on individual speech bubbles instead of treating the whole screen as one blob. Repeated bubbles no longer collapse into one because stop keys combine text, position, and app.
+- **Reading time is proportional.** Dwell follows the extension's ~210 wpm model plus a short bonus, clamped from 0.8 s up to 90 s, so long bubbles get proportionally long rests.
+- **Foreground app is detected at start**, so "Use this app" works without waiting for a window-change event.
 
 ## Install
 
 1. Copy the APK to your Android phone.
 2. Open it and allow installation from that file manager/browser when asked.
-3. Install it over the earlier prototype. If your phone refuses the update, uninstall the old app first and install this one.
+3. **Uninstall the old prototype first**, then install this one. The version code changed, but a clean install avoids stale permission state.
 4. Open **Calm Reader Mobile** and grant the accesses below.
 
 This is a debug APK for testing, not a Play Store release.
 
 ### If a main-app button looks dead
 
-Build `1.5` shows a small diagnostic line under the status message. It should include `v1.5`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…`; if Android does not switch screens, it shows the manual Settings path instead. Build `1.5` also shows a native setup dialog at launch when a permission is missing, with buttons that open the correct Android screen without using the web bridge. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
+Build `1.6` shows a small diagnostic line under the status message. It should include `v1.6`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.6` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
 
 ## Set up once
 
@@ -49,15 +58,15 @@ Calm Reader will not scroll other apps. When a different app is in front, it wai
 - **Use this app** — scope reading to the app currently in front.
 - **Clear** — remove the target; use this only if you deliberately want any app.
 - **Read now** — speak exposed text or run bubble OCR immediately.
-- **Bubbles: On/Off** — enable local OCR for image speech bubbles.
-- **Slower / Faster** — five gentle speeds.
+- **Bubbles: On/Off** — enable local OCR for image speech bubbles (on by default).
+- **Slower / Faster** — five speeds, now close to the desktop extension's pace.
 - **Close controls** — hide the panel; the circle remains.
 
 ## Text and bubble pauses
 
-- The reader now uses the same glide model as the desktop extension: a reading line at 42% of the screen, continuous small drags toward the next unread bubble, a dwell whose length comes from the text, longer rests on artwork, and a faster cruise through empty gaps.
+- The reader uses the desktop extension's motion model: a reading line at 42% of the screen, one continuous velocity-ramped glide toward the next unread stop, a dwell whose length comes from the text, longer rests on artwork, and a faster cruise through empty gaps.
 - Dwell timing is independent of the voice, so a slow or unavailable local voice can never freeze scrolling.
-- For image-only chapters, turn on **Bubbles** and allow screen capture once. OCR runs on the device using a model bundled inside the APK. The floating controls are hidden during each crop, frames are throttled, and repeated frames are ignored.
+- For image-only chapters, **Bubbles** is on by default. Allow screen capture once when asked. OCR runs on the device using a model bundled inside the APK. The floating controls are hidden during each crop, frames are throttled, stale frames are discarded, and repeated frames are ignored.
 
 ## Privacy
 
@@ -72,8 +81,8 @@ Calm Reader will not scroll other apps. When a different app is in front, it wai
 
 ## Validation
 
-- APK content audit: 77/77 passed.
-- Java compile and web JavaScript syntax checks passed.
+- APK content audit: all checks passed, including new v1.6 checks for build string, composite stop keys, per-line OCR stops, and continued glide gestures.
+- Java compile, Gradle lint, and web JavaScript syntax checks passed.
 - No external URLs and no network fetch/XHR in the bundled web app.
 - No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.
 - Bundled OCR model assets and native libraries present.
