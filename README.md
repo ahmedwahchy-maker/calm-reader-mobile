@@ -9,9 +9,9 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.4` (extension-style glide engine + tap/bridge diagnostics + resilient settings links)
+- Version: debug prototype `1.5` (extension-style glide engine + bridge-independent permission setup)
 - Minimum Android: 7.0 (API 24)
-- SHA-256: `269D814A2AAFFE011776188D79EA5CA02E832589AA99AC598DF353B276FF300C`
+- SHA-256: `ABCB86C922D27DD276264CB5EA8B29EFFB8A0BC70B48AC0D102753936114F01B`
 
 ## Install
 
@@ -24,7 +24,7 @@ This is a debug APK for testing, not a Play Store release.
 
 ### If a main-app button looks dead
 
-Build `1.4` shows a small diagnostic line under the status message. It should include `v1.4`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…`; if Android does not switch screens, it shows the manual Settings path instead. If the counter does not move, the phone is still running an older APK — uninstall and reinstall. If the counter moves but `bridge missing`, close and reopen the app after granting both permissions.
+Build `1.5` shows a small diagnostic line under the status message. It should include `v1.5`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…`; if Android does not switch screens, it shows the manual Settings path instead. Build `1.5` also shows a native setup dialog at launch when a permission is missing, with buttons that open the correct Android screen without using the web bridge. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
 
 ## Set up once
 
