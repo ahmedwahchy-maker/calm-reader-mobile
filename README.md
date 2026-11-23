@@ -9,18 +9,19 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.6` (extension-paced continuous glide + per-bubble OCR stops)
+- Version: debug prototype `1.7` (current-screen reading-line stops + continuous fast glide)
 - Minimum Android: 7.0 (API 24)
-- Size: 24,780,562 bytes
-- SHA-256: `03B6A75FA5EAA65043BD979F916A7C5481DB4CA3E239D2A7621B7AAD3E6E187D`
+- Size: 24,741,180 bytes
+- SHA-256: `6FE83D7331E8595F0606E9FED6EC49BA3F8DDD7294361E8919E87A98D9D49416`
 
-## What changed in 1.6
+## What changed in 1.7
 
-- **No more long wait when tapping Open.** The Drawing access and Accessibility buttons now go straight to Android settings; they no longer wait for a web bridge call that could stall for ~20 seconds.
-- **Much faster, smoother scroll.** The five speeds are now roughly 620/900/1300/1750/2300 px/s. Motion is one velocity-ramped glide with continued drag segments instead of short separate flicks, and gaps are crossed at nearly 1.9x while artwork is revealed more slowly.
-- **Bubble stops fixed.** Bubble reading is on by default. Local OCR now produces a separate stop for each recognised line, so the reader pauses on individual speech bubbles instead of treating the whole screen as one blob. Repeated bubbles no longer collapse into one because stop keys combine text, position, and app.
-- **Reading time is proportional.** Dwell follows the extension's ~210 wpm model plus a short bonus, clamped from 0.8 s up to 90 s, so long bubbles get proportionally long rests.
-- **Foreground app is detected at start**, so "Use this app" works without waiting for a window-change event.
+- **Stops are chosen from the current screen.** Fresh on-device OCR of the visible frame runs every ~450 ms and a stop is triggered when text crosses the reading area nearest 42% of the screen. Accessibility-exposed text is used as a fallback for apps that expose it.
+- **Velocity is no longer thrown away between gesture runs.** Short Android drag segments now keep their speed, so the glide behaves like one continuous extension-style motion instead of repeatedly starting from zero.
+- **Faster through gaps, still slow at text.** Five speeds are now roughly 900/1300/1800/2400/3200 px/s, with acceleration 4200 px/s², braking 5200 px/s², a 4800 px/s cruise ceiling, and a 2.1× gap multiplier.
+- **Bubble reading is forced on for existing installs.** v1.5/v1.6 could leave the saved setting off, which meant image comics never got OCR stops.
+- **Capture consent is asked while you are still in the app.** Tapping **Start floating reader** now opens the screen-capture prompt when bubble reading is on, so local OCR is not left blind.
+- **Proportional reading rests remain.** Dwell still follows the extension's ~210 wpm model plus a short bonus, clamped from 0.8 s up to 90 s, so long bubbles get proportionally long rests.
 
 ## Install
 
@@ -33,13 +34,13 @@ This is a debug APK for testing, not a Play Store release.
 
 ### If a main-app button looks dead
 
-Build `1.6` shows a small diagnostic line under the status message. It should include `v1.6`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.6` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
+Build `1.7` shows a small diagnostic line under the status message. It should include `v1.7`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.7` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
 
 ## Set up once
 
 1. Tap **Drawing access** and allow Calm Reader to display over other apps.
 2. Tap **Accessibility**, find **Calm Reader scrolling**, and switch it on.
-3. Tap **Start floating reader**. A small green circle now stays on top of whatever you open.
+3. Tap **Start floating reader**. A small green circle now stays on top of whatever you open. Allow screen capture when asked so image bubbles can be read locally.
 
 You can drag the circle anywhere. It avoids browser controls, scrollbars, and safe areas.
 
@@ -64,7 +65,8 @@ Calm Reader will not scroll other apps. When a different app is in front, it wai
 
 ## Text and bubble pauses
 
-- The reader uses the desktop extension's motion model: a reading line at 42% of the screen, one continuous velocity-ramped glide toward the next unread stop, a dwell whose length comes from the text, longer rests on artwork, and a faster cruise through empty gaps.
+- The reader uses the desktop extension's motion model: a reading line at 42% of the screen, one continuous velocity-ramped glide, a dwell whose length comes from the text, longer rests on artwork, and a faster cruise through empty gaps.
+- Stops are chosen from text currently on screen, not predicted from old offscreen positions. This is what makes it work "blind" with image-only chapters.
 - Dwell timing is independent of the voice, so a slow or unavailable local voice can never freeze scrolling.
 - For image-only chapters, **Bubbles** is on by default. Allow screen capture once when asked. OCR runs on the device using a model bundled inside the APK. The floating controls are hidden during each crop, frames are throttled, stale frames are discarded, and repeated frames are ignored.
 
@@ -81,7 +83,7 @@ Calm Reader will not scroll other apps. When a different app is in front, it wai
 
 ## Validation
 
-- APK content audit: all checks passed, including new v1.6 checks for build string, composite stop keys, per-line OCR stops, and continued glide gestures.
+- APK content audit: all checks passed, including v1.7 checks for the build string, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
 - Java compile, Gradle lint, and web JavaScript syntax checks passed.
 - No external URLs and no network fetch/XHR in the bundled web app.
 - No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.
