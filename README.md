@@ -9,9 +9,9 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.1` (button fix build)
+- Version: debug prototype `1.2` (extension-style glide engine)
 - Minimum Android: 7.0 (API 24)
-- SHA-256: `D66ACA2F55F5335F1DECE21ACC152E0A93807B251E8BDC9721750A4D8E33189F`
+- SHA-256: `DD41D904D02B80426435CAAA2DEE2A653291ED80D3A665D49E6425177F1EDF64`
 
 ## Install
 
@@ -51,9 +51,9 @@ Calm Reader will not scroll other apps. When a different app is in front, it wai
 
 ## Text and bubble pauses
 
-- When Android exposes readable text, the reader pauses while the local voice speaks it. A longer bubble gets a proportionally longer pause.
+- The reader now uses the same glide model as the desktop extension: a reading line at 42% of the screen, continuous small drags toward the next unread bubble, a dwell whose length comes from the text, longer rests on artwork, and a faster cruise through empty gaps.
+- Dwell timing is independent of the voice, so a slow or unavailable local voice can never freeze scrolling.
 - For image-only chapters, turn on **Bubbles** and allow screen capture once. OCR runs on the device using a model bundled inside the APK. The floating controls are hidden during each crop, frames are throttled, and repeated frames are ignored.
-- The reader moves faster through empty gaps after it has checked for text.
 
 ## Privacy
 
