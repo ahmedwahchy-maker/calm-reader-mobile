@@ -1,69 +1,80 @@
 # Calm Reader Mobile
 
-Floating, hands-free reader for Android. It follows you across browsers and apps.
+A floating, hands-free reader for Android. It stays with you across apps, but scrolls and reads **only the app you choose**.
 
-This is a local-only prototype. It uses the phone's own on-device text-to-speech voices, not the desktop neural voice, and it makes no external requests.
+This is a local-only prototype. It uses the phone's own on-device Android `TextToSpeech` voice and bundled ML Kit OCR. It has no `INTERNET` permission and makes no external requests.
 
 ## APK
 
-Download [`calm-reader-mobile-prototype-debug.apk`](calm-reader-mobile-prototype-debug.apk).
+Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.0` (floating overlay build)
+- Version: debug prototype `1.0` (target-scoped reading build)
 - Minimum Android: 7.0 (API 24)
-- SHA-256: `37A0C8AA86BA751564471861A952D63D3E25FCA8F36CEE10AA9676A19CEC045C`
+- SHA-256: `3072867051E65FBAE32AB1D374064E98F496B5CC9B083E06D36EE2CE15DE864B`
 
 ## Install
 
 1. Copy the APK to your Android phone.
 2. Open it and allow installation from that file manager/browser when asked.
-3. Install it over the earlier prototype; if your phone refuses the update, uninstall the old app first and then install this one.
-4. Open **Calm Reader Mobile** and grant the two accesses below.
+3. Install it over the earlier prototype. If your phone refuses the update, uninstall the old app first and install this one.
+4. Open **Calm Reader Mobile** and grant the accesses below.
 
 This is a debug APK for testing, not a Play Store release.
 
 ## Set up once
 
-1. Tap **1. Drawing access** and allow Calm Reader to display over other apps.
-2. Tap **2. Accessibility**, find **Calm Reader scrolling**, and switch it on.
-3. Tap **Start floating reader**. A small circle now stays on top of whatever you open.
+1. Tap **Drawing access** and allow Calm Reader to display over other apps.
+2. Tap **Accessibility**, find **Calm Reader scrolling**, and switch it on.
+3. Tap **Start floating reader**. A small green circle now stays on top of whatever you open.
 
-You can drag the circle anywhere. It does not sit in the browser controls or the page content.
+You can drag the circle anywhere. It avoids browser controls, scrollbars, and safe areas.
 
-## Use in any app
+## Read only your manga app
 
-1. Open your browser or manhwa app, for example Asura Scans.
+1. Open the manga/manhwa app you want to read.
 2. Tap the floating circle to open the controls.
-3. Choose what you want:
-   - **Start/Pause scrolling** — continuous gentle glide down the page.
-   - **Scroll up / Scroll down** — one movement at a time.
-   - **Read screen text** — speaks text that the current app exposes through Android accessibility, using the local voice.
-   - **Slower / Faster** — five scroll speeds.
-4. Tap **Close controls** to hide the panel; the circle remains.
+3. Tap **Use this app**. The panel now shows the app name.
+4. Tap **Start scrolling**.
 
-Stop the floating reader from the app with **Stop**, or swipe the notification away.
+Calm Reader will not scroll other apps. When a different app is in front, it waits and says **Waiting for the chosen app**.
 
-## What it can and cannot read
+## Controls in the floating panel
 
-- **Text-based pages:** exposed headings, captions, and dialogue can be read aloud with the device voice.
-- **Image-only chapters:** speech bubbles inside images cannot be read yet. That needs local OCR, which is not in this prototype. The app says so instead of guessing.
-- It does not bypass logins, paywalls, region locks, or site access controls.
+- **Start scrolling / Pause** — start or stop the gentle glide.
+- **Use this app** — scope reading to the app currently in front.
+- **Clear** — remove the target; use this only if you deliberately want any app.
+- **Read now** — speak exposed text or run bubble OCR immediately.
+- **Bubbles: On/Off** — enable local OCR for image speech bubbles.
+- **Slower / Faster** — five gentle speeds.
+- **Close controls** — hide the panel; the circle remains.
+
+## Text and bubble pauses
+
+- When Android exposes readable text, the reader pauses while the local voice speaks it. A longer bubble gets a proportionally longer pause.
+- For image-only chapters, turn on **Bubbles** and allow screen capture once. OCR runs on the device using a model bundled inside the APK. The floating controls are hidden during each crop, frames are throttled, and repeated frames are ignored.
+- The reader moves faster through empty gaps after it has checked for text.
 
 ## Privacy
 
-- No `INTERNET` permission in the APK.
+- No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the APK.
 - Web assets use `connect-src 'none'`.
-- Uses native Android `TextToSpeech`, preferring voices marked as on-device.
-- No speech text or audio is uploaded. No screenshots are taken or uploaded.
-- Accessibility is used only for scroll gestures and exposed text. No pointer paths, images, or URLs are recorded.
-- Debug telemetry is numeric/boolean only: permission flags, running state, speed level, voice readiness, hidden state, error count, external request count.
+- No speech text, audio, screenshots, or page content are uploaded.
+- OCR model and native library are bundled in the APK; no runtime model download.
+- Screen capture is used only while bubble reading is on, only for the visible screen, and only locally.
+- Accessibility is used only for the chosen app's scroll gestures and exposed text. No pointer paths, image URLs, or hidden-tab content are recorded.
+- Debug state is numeric/boolean only: permission flags, running state, target matched, speed level, voice readiness, hidden state, error count, and external request count.
+- It does not bypass logins, paywalls, region locks, or access controls.
 
 ## Validation
 
-- APK content audit: 36/36 passed.
-- Overlay service, accessibility service, and JS bridge compiled into the APK.
+- APK content audit: 77/77 passed.
+- Java compile and web JavaScript syntax checks passed.
 - No external URLs and no network fetch/XHR in the bundled web app.
-- No `INTERNET` permission in the manifest.
-- Web UI JavaScript syntax check passed.
+- No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.
+- Bundled OCR model assets and native libraries present.
+- Target scoping, text/bubble dwell, gesture scrolling, voice comfort, and no skipped/repeated speech still need a real-device check by the user.
 
-Real-device testing is still needed to confirm the overlay follows between apps, gestures scroll the target app, voice comfort, and that no text is skipped or repeated.
+## Source
+
+Durable source copy: `calm-reader-mobile-src`.
