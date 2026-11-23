@@ -9,9 +9,9 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.0` (target-scoped reading build)
+- Version: debug prototype `1.1` (button fix build)
 - Minimum Android: 7.0 (API 24)
-- SHA-256: `3072867051E65FBAE32AB1D374064E98F496B5CC9B083E06D36EE2CE15DE864B`
+- SHA-256: `D66ACA2F55F5335F1DECE21ACC152E0A93807B251E8BDC9721750A4D8E33189F`
 
 ## Install
 
