@@ -9,20 +9,20 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.8` (Japanese/Korean OCR + fresh current-screen stops + reliable capture status)
+- Version: debug prototype `1.9` (strict single-app scoping)
 - Minimum Android: 7.0 (API 24)
-- Size: 16,613,011 bytes
-- SHA-256: `BFCF80C04128D7DB5BA3D47D0E300FD4FAC919F59274FCB80E6AE9FCD615ED6F`
+- Size: 16,656,817 bytes
+- SHA-256: `CC7FD25B2BEB20420898C7BCA473BB8CD97847FF3F549C71A2770780BC68E7EB`
 
-## What changed in 1.8
+## What changed in 1.9
 
-- **Japanese and Korean bubbles are now read.** The bundled Latin model was the reason manga/manhwa text often produced no stops at all. Three local recognizers (Latin, Japanese, Korean) now run in parallel on each cropped frame, and the first one that finds text wins. All models ship inside the APK; nothing is downloaded.
-- **Fresh frames are sampled twice as fast.** On-device OCR runs about every 250 ms instead of 450 ms, and the capture loop produces frames every 200 ms instead of 350 ms, so the text crossing the reading line is much closer to what is actually on screen at speed.
-- **A bubble is never read twice in a row.** Each OCR frame gives the same bubble a new stop key, which could re-trigger a dwell. A text-and-position guard now suppresses an immediate repeat at the same place.
-- **Capture status no longer flickers.** Frames are consumed after each OCR pass, so using "a frame exists" as the ready signal made bubble reading look permanently ungranted. The app now tracks the actual capture session, so the status line, prompts, and the bubble toggle agree.
-- **The floating controls no longer get OCR'd.** `FLAG_SECURE` keeps the circle and panel visible to you but invisible to screen capture, so their labels cannot be mistaken for speech bubbles. The controls no longer blink out during each crop.
-- **Gap cruise is less likely to outrun OCR.** The empty-space multiplier dropped from 2.1× to 1.3×. Text stops still brake hard and dwell proportionally; only blind gaps slowed slightly to give OCR time to keep up.
-- **Smaller download.** The APK now ships only ARM phone libraries (arm64-v8a and armeabi-v7a), dropping unused x86 emulator binaries. The CJK models still fit comfortably under GitHub's 25 MB upload limit.
+- **No target, no scrolling.** An empty target used to mean "Any app", so the reader could glide over the launcher, Settings, the phone app, or Calm Reader's own screen. Scrolling is now refused until you tap **Use this app** in the app you actually want to read.
+- **The active window is checked live.** The old code trusted an accessibility event and ignored launcher/system windows, leaving a stale target package while gestures were delivered to whatever was actually on screen. Every tick and every gesture callback now re-reads the window that receives gestures and stops immediately if it is not the chosen app.
+- **A continued gesture cannot escape the target.** The gesture completion path used to call the next segment directly, bypassing the target check. It is now gated too, and any in-flight stroke is invalidated without sending another gesture when scope is lost.
+- **"Use this app" reads the live window.** It no longer uses the stale package from an event. The floating panel shows a small `Active window:` line so you can see exactly what the reader detected.
+- **Accessibility text is target-only.** Text nodes from overlays, system dialogs, and other apps can no longer become stops. OCR likewise discards its result if the screen changed while recognition was running.
+- **Clear now stops first.** **Clear** removes the target and stops scrolling instead of switching to an unscoped "Any app" mode.
+- **Voice remains diagnostic only.** It never controls pacing or stops, and everything still runs locally.
 
 ## Install
 
@@ -35,7 +35,7 @@ This is a debug APK for testing, not a Play Store release.
 
 ### If a main-app button looks dead
 
-Build `1.8` shows a small diagnostic line under the status message. It should include `v1.8`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.8` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
+Build `1.9` shows a small diagnostic line under the status message. It should include `v1.9`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.9` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
 
 ## Set up once
 
@@ -45,21 +45,21 @@ Build `1.8` shows a small diagnostic line under the status message. It should in
 
 You can drag the circle anywhere. It avoids browser controls, scrollbars, and safe areas.
 
-## Read only your manga app
+## Read only one app
 
-1. Open the manga/manhwa app you want to read.
+1. Open the manga/manhwa or website app you want to read.
 2. Tap the floating circle to open the controls.
-3. Tap **Use this app**. The panel now shows the app name.
+3. Tap **Use this app**. The panel now shows `Reading only <app>` and the detected `Active window:`.
 4. Tap **Start scrolling**.
 
-Calm Reader will not scroll other apps. When a different app is in front, it waits and says **Waiting for the chosen app**.
+Calm Reader will not scroll anything else. If you switch to the launcher, Settings, the phone app, or back into Calm Reader itself, it pauses with **Waiting for the chosen app** until you return to the chosen app. With no target chosen it stays stopped and says **Choose an app first**.
 
 ## Controls in the floating panel
 
-- **Start scrolling / Pause** — start or stop the gentle glide.
-- **Use this app** — scope reading to the app currently in front.
-- **Clear** — remove the target; use this only if you deliberately want any app.
-- **Read now** — speak exposed text or run bubble OCR immediately.
+- **Start scrolling / Pause** — start or stop the gentle glide (needs a chosen app).
+- **Use this app** — scope reading to the live app currently in front.
+- **Clear** — stop and remove the target; choose an app again before scrolling.
+- **Read now** — speak exposed text or run bubble OCR immediately, only in the chosen app.
 - **Bubbles: On/Off** — enable local OCR for image speech bubbles (on by default).
 - **Slower / Faster** — five speeds, close to the desktop extension's pace.
 - **Close controls** — hide the panel; the circle remains.
@@ -84,13 +84,13 @@ Calm Reader will not scroll other apps. When a different app is in front, it wai
 
 ## Validation
 
-- APK content audit: all checks passed, including v1.8 checks for the build string, Latin/Japanese/Korean recognizers, bundled CJK OCR models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
+- APK content audit: all checks passed, including v1.9 checks for strict target scoping, live active-window verification, target-only stops, no Any-app mode, CJK recognizers and bundled models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
 - Java compile, Gradle lint, and web JavaScript syntax checks passed.
 - No external URLs and no network fetch/XHR in the bundled web app.
 - No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.
 - Only ARM phone ABIs are packaged; the APK is under GitHub's 25 MB upload limit.
 - Bundled OCR model assets and native libraries present.
-- Target scoping, text/bubble dwell (including Japanese/Korean), gesture scrolling, voice comfort, and no skipped/repeated speech still need a real-device check by the user.
+- Target scoping across app switches, text/bubble dwell (including Japanese/Korean), gesture scrolling, voice comfort, and no skipped/repeated speech still need a real-device check by the user.
 
 ## Source
 
