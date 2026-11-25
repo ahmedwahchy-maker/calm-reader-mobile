@@ -9,10 +9,18 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.12` (strict single-app scoping)
+- Version: debug prototype `1.13` (length-based text/bubble dwells)
 - Minimum Android: 7.0 (API 24)
-- Size: 16,696,059 bytes
-- SHA-256: `B769B8EEB53EE32448716E8A2105ED32526010E9D9B30BD78960BD35EB4CDD07`
+- Size: 16,740,880 bytes
+- SHA-256: `3AA2742E909F8E1E0B2DAC671545F9FEC7F547634032C2F13D8217A4FDB1BC26`
+
+## What changed in 1.13
+
+- **The reader now really stops to read.** Stop checks run while a scroll gesture result is still pending, and the gesture callback immediately checks the reading line again. Text and OCR bubbles are no longer skipped just because a gesture is in flight.
+- **Dwell length follows the text.** Short bubbles rest at the 800 ms floor; longer bubbles and exposed text rest longer, using the same 210-wpm-based `dwellFor()` calculation as the desktop extension. Voice speed never affects the pause.
+- **OCR bubbles use the same reading rest.** A recognised bubble begins the same text-length dwell as native text and is announced locally as **Reading bubbles**.
+- **Fixed the capture stall.** The `ImageReader` was returning before it acquired/closed throttled frames. With `maxImages = 2`, that filled the queue and stopped all later frames, so OCR never saw a bubble. Every frame is now acquired first and closed whether or not it is used, keeping OCR fed.
+- **Gesture safety from 1.12 is kept.** Only one gesture result can be pending at a time; stops never lift a finger over a pending result, and missing callbacks fail safe instead of overlapping strokes.
 
 ## What changed in 1.12
 
@@ -54,7 +62,7 @@ This is a debug APK for testing, not a Play Store release.
 
 ### If a main-app button looks dead
 
-Build `1.12` shows a small diagnostic line under the status message. It should include `v1.12`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.12` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
+Build `1.13` shows a small diagnostic line under the status message. It should include `v1.13`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.13` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
 
 ## Set up once
 
@@ -103,13 +111,15 @@ Calm Reader will not scroll anything else. If you switch to the launcher, Settin
 
 ## Validation
 
-- APK content audit: all checks passed, including v1.12 serialized gesture checks (pending-result gate, callback-owned slot release, no lifting gesture, fail-safe watchdog) plus the earlier capture prompt guard, capture callback unregister, no diagnostic logging, strict target scoping, live active-window verification, target-only stops, no Any-app mode, CJK recognizers and bundled models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
+- APK content audit: all checks passed, including v1.13 dwell checks (stop checks before the pending-result gate, direct line check in gesture callbacks, text-length `dwellFor()`, bubbles using the same dwell, capture queue always drained, no temporary probe logs) plus the v1.12 serialized gesture checks, the earlier capture prompt guard, capture callback unregister, no diagnostic logging, strict target scoping, live active-window verification, target-only stops, no Any-app mode, CJK recognizers and bundled models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
 - Java compile, Gradle lint, and web JavaScript syntax checks passed.
 - No external URLs and no network fetch/XHR in the bundled web app.
 - No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.
 - Only ARM phone ABIs are packaged; the APK is under GitHub's 25 MB upload limit.
 - Bundled OCR model assets and native libraries present.
-- Device validation: strict single-app scoping, text/bubble dwells, continued glide, and service-reconnect resilience were verified during testing. The final `1.12` APK showed the correct build label, started the overlay, produced exactly one capture-consent prompt, and kept `system_server` stable. Two real-site passes on Asura Scans Chapter 7 in Brave with bubble OCR on (a 2-minute glide plus a 30-second restart/stop cycle) showed fresh injected `MotionEvent`s, stayed scoped to the chosen chapter, and produced no new `system_server_crash` entry and no `MotionEventInjector`/`onPerformGestureResult` warnings.
+- Device validation: strict single-app scoping, continued glide, and service-reconnect resilience were verified during testing. The final `1.13` APK showed the correct build label (`versionName=1.13`, `versionCode=15`), started the overlay, produced one capture-consent prompt, and kept `system_server` on PID 13990.
+- A temporary probe build on Asura Scans Chapter 7 in Brave proved the capture fix and the dwell behaviour: OCR frames arrived continuously (`ocr items > 0`), bubbles and native text both started dwells (`Reading bubbles` / `Reading text`), short text rested at 800 ms, 10–15 character text rested 921–1207 ms, and a 36-character stop rested 2636 ms, with matching `dwell_end` gaps. All temporary probe logging was removed from the final source and APK.
+- A clean final real-site pass on the exact published APK ran a 45-second glide on the same chapter, held the scroll wake lock, advanced from Page 1 to Page 4, emitted zero probe-log lines, and produced no new `system_server_crash` entry. The three historical `MotionEventInjector`/`onPerformGestureResult` dropbox entries all predate this validation (latest at 2026-11-25 17:54).
 
 ## Source
 
