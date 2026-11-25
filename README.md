@@ -1,1 +1,109 @@
-"# Calm Reader Mobile\n\nA floating, hands-free reader for Android. It stays with you across apps, but scrolls and reads **only the app you choose**.\n\nThis is a local-only prototype. It uses the phone's own on-device Android `TextToSpeech` voice and bundled ML Kit OCR. It has no `INTERNET` permission and makes no external requests.\n\n## APK\n\nDownload [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).\n\n- Package: `com.calmreader.mobile`\n- Version: debug prototype `1.11` (strict single-app scoping)\n- Minimum Android: 7.0 (API 24)\n- Size: 16,695,215 bytes\n- SHA-256: `81B19B0A3965D1F1CCE8C1439DF5E3A2BFD6DF1F148B24C1FF110C1DF0DA7CEE`\n\n## What changed in 1.11\n\n- **No stale gesture continuations.** Text/bubble stop checks no longer lift the virtual finger while a scroll segment is still being injected. A late lift or reconnect now invalidates the old callback and starts a fresh stroke, so Android no longer rejects the glide with `MotionEventInjector` continuation warnings.\n- The result is a steadier real-site glide: text and image bubbles still pause locally, but the finger is never lifted from an in-flight stroke.\n\n## Earlier fixes in 1.10\n\n- **One capture-consent prompt.** A pending prompt is now tracked so duplicate requests from the main UI, the floating panel, and the reading loop cannot queue multiple system dialogs.\n- **Capture restart no longer self-stops.** The old `MediaProjection` callback is unregistered before a planned restart, so its `onStop()` cannot shut down the replacement session.\n- **Accessibility reconnects stay safe.** A brief service interruption pauses the glide instead of issuing a gesture through a stale callback; reconnecting the service resumes the user's existing scroll request.\n- **Temporary logs removed.** The diagnostic `CalmDiag` logging used while testing is gone from both the source and the APK. State shown in the app remains numeric/boolean only.\n\n### Earlier fixes in 1.9\n\n- **No target, no scrolling.** An empty target used to mean \"Any app\", so the reader could glide over the launcher, Settings, the phone app, or Calm Reader's own screen. Scrolling is now refused until you tap **Use this app** in the app you actually want to read.\n- **The active window is checked live.** The old code trusted an accessibility event and ignored launcher/system windows, leaving a stale target package while gestures were delivered to whatever was actually on screen. Every tick and every gesture callback now re-reads the window that receives gestures and stops immediately if it is not the chosen app.\n- **A continued gesture cannot escape the target.** The gesture completion path used to call the next segment directly, bypassing the target check. It is now gated too, and any in-flight stroke is invalidated without sending another gesture when scope is lost.\n- **\"Use this app\" reads the live window.** It no longer uses the stale package from an event, and the floating panel shows the detected active window.\n- **Accessibility text is target-only.** Text nodes from overlays, system dialogs, and other apps can no longer become stops. OCR likewise discards its result if the screen changed while recognition was running.\n- **Clear now stops first.** **Clear** removes the target and stops scrolling instead of switching to an unscoped \"Any app\" mode.\n- **Voice remains diagnostic only.** It never controls pacing or stops, and everything still runs locally.\n\n## Install\n\n1. Copy the APK to your Android phone.\n2. Open it and allow installation from that file manager/browser when asked.\n3. **Uninstall the old prototype first**, then install this one. A clean install avoids stale permission state.\n4. Open **Calm Reader Mobile** and grant the accesses below.\n\nThis is a debug APK for testing, not a Play Store release.\n\n### If a main-app button looks dead\n\nBuild `1.11` shows a small diagnostic line under the status message. It should include `v1.11`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.11` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.\n\n## Set up once\n\n1. Tap **Drawing access** and allow Calm Reader to display over other apps.\n2. Tap **Accessibility**, find **Calm Reader scrolling**, and switch it on.\n3. Tap **Start floating reader**. A small green circle now stays on top of whatever you open. Allow screen capture when asked so image bubbles can be read locally.\n\nYou can drag the circle anywhere. It avoids browser controls, scrollbars, and safe areas.\n\n## Read only one app\n\n1. Open the manga/manhwa or website app you want to read.\n2. Tap the floating circle to open the controls.\n3. Tap **Use this app**. The panel now shows `Reading only <app>` and the detected active window.\n4. Tap **Start scrolling**.\n\nCalm Reader will not scroll anything else. If you switch to the launcher, Settings, the phone app, or back into Calm Reader itself, it pauses with **Waiting for the chosen app** until you return to the chosen app. With no target chosen it stays stopped and says **Choose an app first**.\n\n## Controls in the floating panel\n\n- **Start scrolling / Pause** — start or stop the gentle glide (needs a chosen app).\n- **Use this app** — scope reading to the live app currently in front.\n- **Clear** — stop and remove the target; choose an app again before scrolling.\n- **Read now** — speak exposed text or run bubble OCR immediately, only in the chosen app.\n- **Bubbles: On/Off** — enable local OCR for image speech bubbles (on by default).\n- **Slower / Faster** — five speeds, close to the desktop extension's pace.\n- **Close controls** — hide the panel; the circle remains.\n\n## Text and bubble pauses\n\n- The reader uses the desktop extension's motion model: a reading line at 42% of the screen, one continuous velocity-ramped glide, a dwell whose length comes from the text, longer rests on artwork, and a faster cruise through empty gaps.\n- Stops are chosen from text currently on screen, not predicted from old offscreen positions. This is what makes it work \"blind\" with image-only chapters.\n- Dwell timing is independent of the voice, so a slow or unavailable local voice can never freeze scrolling. The built-in voice is diagnostic only.\n- For image-only chapters, **Bubbles** is on by default. Allow screen capture once when asked. Latin, Japanese, and Korean OCR all run on the device using models bundled inside the APK. The floating controls are excluded from capture with `FLAG_SECURE`, frames are throttled, stale frames are discarded, overlapping OCR runs are skipped, and repeated text at the same place is ignored.\n\n## Privacy\n\n- No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the APK.\n- Web assets use `connect-src 'none'`.\n- No speech text, audio, screenshots, or page content are uploaded.\n- All OCR models and native libraries are bundled in the APK; no runtime model download.\n- Screen capture is used only while bubble reading is on, only for the visible screen, and only locally.\n- Accessibility is used only for the chosen app's scroll gestures and exposed text. No pointer paths, image URLs, or hidden-tab content are recorded.\n- Debug state is numeric/boolean only: permission flags, running state, target matched, speed level, voice readiness, hidden state, error count, and external request count.\n- It does not bypass logins, paywalls, region locks, or access controls.\n\n## Validation\n\n- APK content audit: all checks passed, including v1.11 checks for safe in-flight stroke continuation plus the earlier capture prompt guard, capture callback unregister, no diagnostic logging, strict target scoping, live active-window verification, target-only stops, no Any-app mode, CJK recognizers and bundled models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.\n- Java compile, Gradle lint, and web JavaScript syntax checks passed.\n- No external URLs and no network fetch/XHR in the bundled web app.\n- No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.\n- Only ARM phone ABIs are packaged; the APK is under GitHub's 25 MB upload limit.\n- Bundled OCR model assets and native libraries present.\n- Device validation: strict single-app scoping, text/bubble dwells, continued glide, and service-reconnect resilience were verified during testing. The final `1.11` APK was smoke-tested for build label, overlay start, a single capture-consent prompt, and a stable `system_server`. Two real-site passes on Asura Scans in Brave (bubble OCR off and on) produced no `MotionEventInjector` continuation warnings and stayed scoped to the chosen chapter page.\n\n## Source\n\nDurable source copy: `calm-reader-mobile-src`.\n"
+# Calm Reader Mobile
+
+A floating, hands-free reader for Android. It stays with you across apps, but scrolls and reads **only the app you choose**.
+
+This is a local-only prototype. It uses the phone's own on-device Android `TextToSpeech` voice and bundled ML Kit OCR. It has no `INTERNET` permission and makes no external requests.
+
+## APK
+
+Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
+
+- Package: `com.calmreader.mobile`
+- Version: debug prototype `1.11` (strict single-app scoping)
+- Minimum Android: 7.0 (API 24)
+- Size: 16,695,215 bytes
+- SHA-256: `81B19B0A3965D1F1CCE8C1439DF5E3A2BFD6DF1F148B24C1FF110C1DF0DA7CEE`
+
+## What changed in 1.11
+
+- **No stale gesture continuations.** Text/bubble stop checks no longer lift the virtual finger while a scroll segment is still being injected. A late lift or reconnect now invalidates the old callback and starts a fresh stroke, so Android no longer rejects the glide with `MotionEventInjector` continuation warnings.
+- The result is a steadier real-site glide: text and image bubbles still pause locally, but the finger is never lifted from an in-flight stroke.
+
+## Earlier fixes in 1.10
+
+- **One capture-consent prompt.** A pending prompt is now tracked so duplicate requests from the main UI, the floating panel, and the reading loop cannot queue multiple system dialogs.
+- **Capture restart no longer self-stops.** The old `MediaProjection` callback is unregistered before a planned restart, so its `onStop()` cannot shut down the replacement session.
+- **Accessibility reconnects stay safe.** A brief service interruption pauses the glide instead of issuing a gesture through a stale callback; reconnecting the service resumes the user's existing scroll request.
+- **Temporary logs removed.** The diagnostic `CalmDiag` logging used while testing is gone from both the source and the APK. State shown in the app remains numeric/boolean only.
+
+### Earlier fixes in 1.9
+
+- **No target, no scrolling.** An empty target used to mean "Any app", so the reader could glide over the launcher, Settings, the phone app, or Calm Reader's own screen. Scrolling is now refused until you tap **Use this app** in the app you actually want to read.
+- **The active window is checked live.** The old code trusted an accessibility event and ignored launcher/system windows, leaving a stale target package while gestures were delivered to whatever was actually on screen. Every tick and every gesture callback now re-reads the window that receives gestures and stops immediately if it is not the chosen app.
+- **A continued gesture cannot escape the target.** The gesture completion path used to call the next segment directly, bypassing the target check. It is now gated too, and any in-flight stroke is invalidated without sending another gesture when scope is lost.
+- **"Use this app" reads the live window.** It no longer uses the stale package from an event, and the floating panel shows the detected active window.
+- **Accessibility text is target-only.** Text nodes from overlays, system dialogs, and other apps can no longer become stops. OCR likewise discards its result if the screen changed while recognition was running.
+- **Clear now stops first.** **Clear** removes the target and stops scrolling instead of switching to an unscoped "Any app" mode.
+- **Voice remains diagnostic only.** It never controls pacing or stops, and everything still runs locally.
+
+## Install
+
+1. Copy the APK to your Android phone.
+2. Open it and allow installation from that file manager/browser when asked.
+3. **Uninstall the old prototype first**, then install this one. A clean install avoids stale permission state.
+4. Open **Calm Reader Mobile** and grant the accesses below.
+
+This is a debug APK for testing, not a Play Store release.
+
+### If a main-app button looks dead
+
+Build `1.11` shows a small diagnostic line under the status message. It should include `v1.11`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.11` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
+
+## Set up once
+
+1. Tap **Drawing access** and allow Calm Reader to display over other apps.
+2. Tap **Accessibility**, find **Calm Reader scrolling**, and switch it on.
+3. Tap **Start floating reader**. A small green circle now stays on top of whatever you open. Allow screen capture when asked so image bubbles can be read locally.
+
+You can drag the circle anywhere. It avoids browser controls, scrollbars, and safe areas.
+
+## Read only one app
+
+1. Open the manga/manhwa or website app you want to read.
+2. Tap the floating circle to open the controls.
+3. Tap **Use this app**. The panel now shows `Reading only <app>` and the detected active window.
+4. Tap **Start scrolling**.
+
+Calm Reader will not scroll anything else. If you switch to the launcher, Settings, the phone app, or back into Calm Reader itself, it pauses with **Waiting for the chosen app** until you return to the chosen app. With no target chosen it stays stopped and says **Choose an app first**.
+
+## Controls in the floating panel
+
+- **Start scrolling / Pause** — start or stop the gentle glide (needs a chosen app).
+- **Use this app** — scope reading to the live app currently in front.
+- **Clear** — stop and remove the target; choose an app again before scrolling.
+- **Read now** — speak exposed text or run bubble OCR immediately, only in the chosen app.
+- **Bubbles: On/Off** — enable local OCR for image speech bubbles (on by default).
+- **Slower / Faster** — five speeds, close to the desktop extension's pace.
+- **Close controls** — hide the panel; the circle remains.
+
+## Text and bubble pauses
+
+- The reader uses the desktop extension's motion model: a reading line at 42% of the screen, one continuous velocity-ramped glide, a dwell whose length comes from the text, longer rests on artwork, and a faster cruise through empty gaps.
+- Stops are chosen from text currently on screen, not predicted from old offscreen positions. This is what makes it work "blind" with image-only chapters.
+- Dwell timing is independent of the voice, so a slow or unavailable local voice can never freeze scrolling. The built-in voice is diagnostic only.
+- For image-only chapters, **Bubbles** is on by default. Allow screen capture once when asked. Latin, Japanese, and Korean OCR all run on the device using models bundled inside the APK. The floating controls are excluded from capture with `FLAG_SECURE`, frames are throttled, stale frames are discarded, overlapping OCR runs are skipped, and repeated text at the same place is ignored.
+
+## Privacy
+
+- No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the APK.
+- Web assets use `connect-src 'none'`.
+- No speech text, audio, screenshots, or page content are uploaded.
+- All OCR models and native libraries are bundled in the APK; no runtime model download.
+- Screen capture is used only while bubble reading is on, only for the visible screen, and only locally.
+- Accessibility is used only for the chosen app's scroll gestures and exposed text. No pointer paths, image URLs, or hidden-tab content are recorded.
+- Debug state is numeric/boolean only: permission flags, running state, target matched, speed level, voice readiness, hidden state, error count, and external request count.
+- It does not bypass logins, paywalls, region locks, or access controls.
+
+## Validation
+
+- APK content audit: all checks passed, including v1.11 checks for safe in-flight stroke continuation plus the earlier capture prompt guard, capture callback unregister, no diagnostic logging, strict target scoping, live active-window verification, target-only stops, no Any-app mode, CJK recognizers and bundled models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
+- Java compile, Gradle lint, and web JavaScript syntax checks passed.
+- No external URLs and no network fetch/XHR in the bundled web app.
+- No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.
+- Only ARM phone ABIs are packaged; the APK is under GitHub's 25 MB upload limit.
+- Bundled OCR model assets and native libraries present.
+- Device validation: strict single-app scoping, text/bubble dwells, continued glide, and service-reconnect resilience were verified during testing. The final `1.11` APK was smoke-tested for build label, overlay start, a single capture-consent prompt, and a stable `system_server`. Two real-site passes on Asura Scans in Brave (bubble OCR off and on) produced no `MotionEventInjector` continuation warnings and stayed scoped to the chosen chapter page.
+
+## Source
+
+Durable source copy: `calm-reader-mobile-src`.
