@@ -9,15 +9,22 @@ This is a local-only prototype. It uses the phone's own on-device Android `TextT
 Download [`calm-reader-mobile-prototype-debug.apk`](https://raw.githubusercontent.com/ahmedwahchy-maker/calm-reader-mobile/main/calm-reader-mobile-prototype-debug.apk).
 
 - Package: `com.calmreader.mobile`
-- Version: debug prototype `1.11` (strict single-app scoping)
+- Version: debug prototype `1.12` (strict single-app scoping)
 - Minimum Android: 7.0 (API 24)
-- Size: 16,695,215 bytes
-- SHA-256: `81B19B0A3965D1F1CCE8C1439DF5E3A2BFD6DF1F148B24C1FF110C1DF0DA7CEE`
+- Size: 16,696,059 bytes
+- SHA-256: `B769B8EEB53EE32448716E8A2105ED32526010E9D9B30BD78960BD35EB4CDD07`
 
-## What changed in 1.11
+## What changed in 1.12
 
-- **No stale gesture continuations.** Text/bubble stop checks no longer lift the virtual finger while a scroll segment is still being injected. A late lift or reconnect now invalidates the old callback and starts a fresh stroke, so Android no longer rejects the glide with `MotionEventInjector` continuation warnings.
-- The result is a steadier real-site glide: text and image bubbles still pause locally, but the finger is never lifted from an in-flight stroke.
+- **Gesture callbacks are strictly serialized.** Only one scroll gesture can be in flight at a time. A pending result must arrive before another segment is dispatched, so Android 10 can no longer deliver `onPerformGestureResult` to a client that has already been cleared.
+- **No lifting gesture on top of a pending result.** Stopping, pausing for a dwell, or losing scope now drops the continuation locally and lets the existing callback finish it. The old extra "lift" stroke was the direct trigger for the `system_server` crash.
+- **Stalls fail safe.** If a callback does not arrive, the reader stops with **Scroll gesture stalled. Tap Start again.** instead of freeing the slot and overlapping gestures. Accessibility interruption aborts the continuation without dispatching anything new.
+- The result is a steady real-site glide with local text/bubble dwells and no gesture-callback crash.
+
+## Earlier fixes in 1.11
+
+- **No stale gesture continuations.** Text/bubble stop checks no longer lift the virtual finger while a scroll segment is still being injected. A late lift or reconnect invalidated the old callback and started a fresh stroke.
+- The result was a steadier real-site glide: text and image bubbles still paused locally, but the finger was never lifted from an in-flight stroke.
 
 ## Earlier fixes in 1.10
 
@@ -47,7 +54,7 @@ This is a debug APK for testing, not a Play Store release.
 
 ### If a main-app button looks dead
 
-Build `1.11` shows a small diagnostic line under the status message. It should include `v1.11`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.11` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
+Build `1.12` shows a small diagnostic line under the status message. It should include `v1.12`, a tap counter, `native yes`, `overlay yes`, and `bridge ready`. Tap any button: the counter must increase and the message should briefly say `Tapped: …`. For the two **Open** buttons the message then changes to `Opening … settings…` immediately, and Android should switch screens right away. Build `1.12` also shows a native setup dialog at launch when a permission is missing. If the tap counter does not move and no setup dialog appears, the phone is still running an older APK — uninstall and reinstall.
 
 ## Set up once
 
@@ -96,13 +103,13 @@ Calm Reader will not scroll anything else. If you switch to the launcher, Settin
 
 ## Validation
 
-- APK content audit: all checks passed, including v1.11 checks for safe in-flight stroke continuation plus the earlier capture prompt guard, capture callback unregister, no diagnostic logging, strict target scoping, live active-window verification, target-only stops, no Any-app mode, CJK recognizers and bundled models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
+- APK content audit: all checks passed, including v1.12 serialized gesture checks (pending-result gate, callback-owned slot release, no lifting gesture, fail-safe watchdog) plus the earlier capture prompt guard, capture callback unregister, no diagnostic logging, strict target scoping, live active-window verification, target-only stops, no Any-app mode, CJK recognizers and bundled models, OCR in-flight guard, repeat-dwell suppression, current-screen reading-line stops, visible-frame stop tracking, first-run bubble-reading migration, composite stop keys, per-line OCR stops, and continued glide gestures.
 - Java compile, Gradle lint, and web JavaScript syntax checks passed.
 - No external URLs and no network fetch/XHR in the bundled web app.
 - No `INTERNET` or `ACCESS_NETWORK_STATE` permission in the merged manifest.
 - Only ARM phone ABIs are packaged; the APK is under GitHub's 25 MB upload limit.
 - Bundled OCR model assets and native libraries present.
-- Device validation: strict single-app scoping, text/bubble dwells, continued glide, and service-reconnect resilience were verified during testing. The final `1.11` APK was smoke-tested for build label, overlay start, a single capture-consent prompt, and a stable `system_server`. Two real-site passes on Asura Scans in Brave (bubble OCR off and on) produced no `MotionEventInjector` continuation warnings and stayed scoped to the chosen chapter page.
+- Device validation: strict single-app scoping, text/bubble dwells, continued glide, and service-reconnect resilience were verified during testing. The final `1.12` APK showed the correct build label, started the overlay, produced exactly one capture-consent prompt, and kept `system_server` stable. Two real-site passes on Asura Scans Chapter 7 in Brave with bubble OCR on (a 2-minute glide plus a 30-second restart/stop cycle) showed fresh injected `MotionEvent`s, stayed scoped to the chosen chapter, and produced no new `system_server_crash` entry and no `MotionEventInjector`/`onPerformGestureResult` warnings.
 
 ## Source
 
